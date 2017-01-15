@@ -101,33 +101,29 @@ public strictfp class RobotPlayer {
                 //try to build gardeners
                 //can you build a gardener?
 
-                wander();
 
-                goingDir =
+                goingDir = randomDir();
 
-                    if (rc.getRoundNum() < 50 && rc.canHireGardener(goingDir)) {
+                if (rc.getTeamBullets() < 50 && rc.canHireGardener(goingDir)){
+                    rc.hireGardener(goingDir);
+                }
+                else {
+
+                    if (Math.random() < .1 && rc.canHireGardener(goingDir)) {
                         rc.hireGardener(goingDir);
-                        rc.hireGardener(goingDir.rotateLeftDegrees(60));
-                        // here we hire two gradener first
+                        //tryToBuild(RobotType.GARDENER, RobotType.GARDENER.bulletCost);
                     } else {
-
-                        if (Math.random() < .1 && rc.canHireGardener(goingDir)) {
-                            rc.hireGardener(goingDir);
-                            //tryToBuild(RobotType.GARDENER, RobotType.GARDENER.bulletCost);
-                        } else {
-                            Clock.yield();
-                        }
-                        //System.out.println("bytecode usage is "+Clock.getBytecodeNum());
-                        Clock.yield();
+                        wander();
                     }
-
-
-
+                    //System.out.println("bytecode usage is "+Clock.getBytecodeNum());
+                    Clock.yield();
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
+
     static boolean checkIfSurroundinghaveGardener(MapLocation location){
         RobotInfo[] bot = rc.senseNearbyRobots();
         for (RobotInfo b : bot){
@@ -154,27 +150,23 @@ public strictfp class RobotPlayer {
 
                 if (checkIfSurroundinghaveGardener(rc.getLocation())){
                     if (rc.canMove(goingDir)) {
-                    rc.move(goingDir);
+                        rc.move(goingDir);
                     } else {
-                    goingDir = randomDir();
+                        goingDir = randomDir();
                     }
                 }else {
 
                     while (NumOfTrees < 5) {
-
-                        if (rc.canBuildRobot(RobotType.LUMBERJACK, dir.rotateLeftDegrees(60))) {
-
-                        rc.buildRobot(RobotType.LUMBERJACK, dir.rotateLeftDegrees(60));
-
+                        if (rc.getTeamBullets() > 80 && rc.canBuildRobot(RobotType.SCOUT, dir)){
+                            rc.buildRobot(RobotType.SCOUT, dir);
                         }
-                        if (rc.canPlantTree(dir)) {
+                        else if (rc.canPlantTree(dir)) {
                             rc.plantTree(dir);
                             NumOfTrees++;
                         }
-                        tryToWater();
-                        tryToShake();
 
                         dir = dir.rotateLeftDegrees(60);
+
 
                     }
                 }
