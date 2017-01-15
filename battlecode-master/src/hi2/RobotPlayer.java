@@ -222,7 +222,7 @@ public strictfp class RobotPlayer {
                     Direction dirToArchon = rc.getLocation().directionTo(giveMapLocationOfArchon());
                     wanderWithDirection(dirToArchon);
                 }
-                
+
                 if (ThereIsEnemyBotNearBy()) {
                     for (RobotInfo b : bots) {
 
