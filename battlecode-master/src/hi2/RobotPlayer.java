@@ -17,6 +17,7 @@ public strictfp class RobotPlayer {
 
     static final int ArchonPositionX = 99;
     static final int ArchonPositionY = 999;
+    static final int hello = 0;
 
 
     static int count = 0;
