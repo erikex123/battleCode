@@ -104,7 +104,9 @@ public strictfp class RobotPlayer {
                 //can you build a gardener?
 
 
-                if (rc.getRoundNum()<20 && rc.canHireGardener(goingDir)){
+                goingDir = randomDir();
+
+                if (rc.getTeamBullets() < 50 && rc.canHireGardener(goingDir)){
                     rc.hireGardener(goingDir);
                 }
                 else {
@@ -113,7 +115,7 @@ public strictfp class RobotPlayer {
                         rc.hireGardener(goingDir);
                         //tryToBuild(RobotType.GARDENER, RobotType.GARDENER.bulletCost);
                     } else {
-                        Clock.yield();
+                        wander();
                     }
                     //System.out.println("bytecode usage is "+Clock.getBytecodeNum());
                     Clock.yield();
@@ -123,6 +125,7 @@ public strictfp class RobotPlayer {
             }
         }
     }
+
     static boolean checkIfSurroundinghaveGardener(MapLocation location){
         RobotInfo[] bot = rc.senseNearbyRobots();
         for (RobotInfo b : bot){
@@ -149,18 +152,26 @@ public strictfp class RobotPlayer {
 
                 if (checkIfSurroundinghaveGardener(rc.getLocation())){
                     if (rc.canMove(goingDir)) {
-                    rc.move(goingDir);
-                } else {
-                    goingDir = randomDir();
-                }
+                        rc.move(goingDir);
+                    } else {
+                        goingDir = randomDir();
+                    }
                 }else {
 
                     while (NumOfTrees < 5) {
-
-                        if (rc.canPlantTree(dir)) {
+                        if (rc.getTeamBullets() > 80 && rc.canBuildRobot(RobotType.SCOUT, dir)){
+                            rc.buildRobot(RobotType.SCOUT, dir);
+                        }
+                        else if (rc.canPlantTree(dir)) {
                             rc.plantTree(dir);
                             NumOfTrees++;
+                        }else if (rc.getTeamBullets() >= 100){
+                            buildAndCheckRobotByGardener(RobotType.LUMBERJACK, dir);
                         }
+
+                        tryToWater();
+                        tryToShake();
+
                         dir = dir.rotateLeftDegrees(60);
 
 
@@ -168,12 +179,16 @@ public strictfp class RobotPlayer {
                 }
                 tryToWater();
                 tryToShake();
-                for (int i = 0 ; i < 5; i ++){
-                    if (rc.canBuildRobot(RobotType.SCOUT, dir)) {
 
-                        rc.buildRobot(RobotType.SCOUT, dir);
-                        break;
+                /**
+                 * here controls the type of robot that will be built
+                 */
+                for (int i = 0 ; i < 5; i ++){
+                    if (rc.readBroadcast(ScoutEnemyBasePositionX)!=0 && rc.readBroadcast(ScoutEnemyBasePositionY)!=0){
+                        buildAndCheckRobotByGardener(RobotType.SOLDIER,dir);
                     }
+
+                    buildAndCheckRobotByGardener(RobotType.LUMBERJACK, dir);
                     dir = dir.rotateLeftDegrees(60);
                 }
 
@@ -183,6 +198,14 @@ public strictfp class RobotPlayer {
             }
         }
     }
+
+    static void buildAndCheckRobotByGardener(RobotType R , Direction dir) throws GameActionException{
+        if (rc.canBuildRobot(R,dir)){
+            rc.buildRobot(R,dir);
+        }
+    }
+
+
 
     static MapLocation giveMapLocationOfArchon(final int X, final int Y) throws GameActionException {
        float positionX = rc.readBroadcast(X);
