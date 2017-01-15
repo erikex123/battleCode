@@ -112,31 +112,54 @@ public strictfp class RobotPlayer {
             }
         }
     }
+    static boolean checkIfSurroundinghaveGardener(MapLocation location){
+        RobotInfo[] bot = rc.senseNearbyRobots();
+        for (RobotInfo b : bot){
+
+            float distanceBetween = (b.getLocation()).distanceTo(rc.getLocation());
+            if (b.getType() == RobotType.GARDENER && (b.getTeam() == rc.getTeam() ) && distanceBetween <= 8){
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 
     public static void runGardener() throws GameActionException {
         count++;
+
+        Direction dir = Direction.NORTH;
+        int NumOfTrees = 0 ;
+
+
+
         rc.donate(10);
         while (true) {
             try {
 
-                wander();
-
-                dodge();
-
-                //dodge();
-                //first try to plant trees
-                tryToPlant();
-                //now try to water trees
-                tryToWater();
-                tryToShake();
-
-
-                //move around
-                if (rc.canMove(goingDir)) {
+                if (checkIfSurroundinghaveGardener(rc.getLocation())){
+                    if (rc.canMove(goingDir)) {
                     rc.move(goingDir);
                 } else {
                     goingDir = randomDir();
                 }
+                }else {
+
+                    while (NumOfTrees < 5) {
+
+                        if (rc.canPlantTree(dir)) {
+                            rc.plantTree(dir);
+                            NumOfTrees++;
+                        }
+                        dir = dir.rotateLeftDegrees(60);
+
+                    }
+                }
+                tryToWater();
+                tryToShake();
+
+
                 Clock.yield();
 
                 if (rc.canBuildRobot(RobotType.LUMBERJACK, goingDir) && rc.getTeamBullets() >= 50) {
@@ -178,13 +201,13 @@ public strictfp class RobotPlayer {
 
                 MapLocation[] ml = rc.getInitialArchonLocations(rc.getTeam().opponent());
 
-                if (ml.length == 2 ){
-                    Direction Archon1toAchon2 = ml[0].directionTo(ml[1]);
-                }
-                else if (ml.length == 3){
-                    Direction Archon1toAchon2 = ml[0].directionTo(ml[1]);
-                    Direction Archon2toAchon3 = ml[1].directionTo(ml[2]);
-                }
+//                if (ml.length == 2 ){
+//                    Direction Archon1toAchon2 = ml[0].directionTo(ml[1]);
+//                }
+//                else if (ml.length == 3){
+//                    Direction Archon1toAchon2 = ml[0].directionTo(ml[1]);
+//                    Direction Archon2toAchon3 = ml[1].directionTo(ml[2]);
+//                }
 
                 Direction enemyBase = rc.getLocation().directionTo(ml[0]);
 
@@ -297,22 +320,38 @@ public strictfp class RobotPlayer {
     }
 
 
-    public static void tryToPlant() throws GameActionException {
+    public static void tryToPlant(Direction dir) throws GameActionException {
         //try to build gardeners
         //can you build a gardener?
-        if (rc.getTeamBullets() > GameConstants.BULLET_TREE_COST) {//have enough bullets. assuming we haven't built already.
-            for (int i = 0; i < 4; i++) {
-                //only plant trees on a sub-grid
-                MapLocation p = rc.getLocation().add(dirList[i], GameConstants.GENERAL_SPAWN_OFFSET + GameConstants.BULLET_TREE_RADIUS + rc.getType().bodyRadius);
-                if (modGood(p.x, 6, 0.2f) && modGood(p.y, 6, 0.2f)) {
-                    if (rc.canPlantTree(dirList[i])) {
-                        rc.plantTree(dirList[i]);
-                        break;
-                    }
-                }
-            }
+//        if (rc.getTeamBullets() > GameConstants.BULLET_TREE_COST) {//have enough bullets. assuming we haven't built already.
+//            for (int i = 0; i < 4; i++) {
+//                //only plant trees on a sub-grid
+//                MapLocation p = rc.getLocation().add(dirList[i], GameConstants.GENERAL_SPAWN_OFFSET + GameConstants.BULLET_TREE_RADIUS + rc.getType().bodyRadius);
+//                if (modGood(p.x, 6, 0.2f) && modGood(p.y, 6, 0.2f)) {
+//                    if (rc.canPlantTree(dirList[i])) {
+//                        rc.plantTree(dirList[i]);
+//                        break;
+//                    }
+//                }
+//            }
+//        }
+
+        if (rc.getTeamBullets() > GameConstants.BULLET_TREE_COST) {
+
+
+                     if (rc.canPlantTree(dir)){
+                         rc.plantTree(dir);
+                     }
+
+
         }
-    }
+
+        }
+
+
+
+
+
 
 
 
