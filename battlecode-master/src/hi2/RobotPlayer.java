@@ -195,7 +195,58 @@ public strictfp class RobotPlayer {
     }
 
     public static void runSoldier() {
+        boolean archonCount  = true ;
+        while (true && archonCount) {
+            try {
 
+                dodge();
+
+                MapLocation[] ml = rc.getInitialArchonLocations(rc.getTeam().opponent());
+
+
+                Direction enemyBase = rc.getLocation().directionTo(ml[0]);
+
+                RobotInfo[] bots = rc.senseNearbyRobots();
+
+//                BulletInfo[] bullets=rc.senseNearbyBullets();
+
+                if (ThereIsEnemyBotNearBy()){
+                    for(RobotInfo b: bots){
+                        Direction dir = rc.getLocation().directionTo(b.getLocation());
+                        if (b.getTeam()!=rc.getTeam()){
+                            if (rc.canFirePentadShot()&&rc.getTeamBullets()>=100){
+                                rc.firePentadShot(dir);
+                            }
+                            else if (rc.canFireTriadShot()&&rc.getTeamBullets()>=50){
+                                rc.fireTriadShot(dir);
+                            }
+                            else if (rc.canFireSingleShot()&& rc.getTeamBullets()>0){
+                                rc.fireSingleShot(dir);
+                            }
+                            else{
+                                if (rc.readBroadcast(ScoutEnemyBasePositionX)!=0 && rc.readBroadcast(ScoutEnemyBasePositionY)!=0){
+                                    Direction dirToArchon = rc.getLocation().directionTo(giveMapLocationOfArchon(ScoutEnemyBasePositionX,ScoutEnemyBasePositionY));
+                                    directionalTravel(dirToArchon);
+                                }else{
+                                    wanderWithDirection(enemyBase);
+                                }
+                            }
+                        }
+                    }
+                }
+                else{
+                    if (rc.readBroadcast(ScoutEnemyBasePositionX)!=0 && rc.readBroadcast(ScoutEnemyBasePositionY)!=0){
+                        Direction dirToArchon = rc.getLocation().directionTo(giveMapLocationOfArchon(ScoutEnemyBasePositionX,ScoutEnemyBasePositionY));
+                        directionalTravel(dirToArchon);
+                    }else{
+                        wanderWithDirection(enemyBase);
+                    }
+                }
+                Clock.yield();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public static void runScout() {
@@ -241,7 +292,7 @@ public strictfp class RobotPlayer {
                         }
                     }else{
                             Direction dirToArchon = rc.getLocation().directionTo(giveMapLocationOfArchon(ScoutEnemyBasePositionX,ScoutEnemyBasePositionY));
-                            wanderWithDirection(dirToArchon);
+                            directionalTravel(dirToArchon);
 
                     }
                 }
@@ -261,13 +312,6 @@ public strictfp class RobotPlayer {
 
                 MapLocation[] ml = rc.getInitialArchonLocations(rc.getTeam().opponent());
 
-//                if (ml.length == 2 ){
-//                    Direction Archon1toAchon2 = ml[0].directionTo(ml[1]);
-//                }
-//                else if (ml.length == 3){
-//                    Direction Archon1toAchon2 = ml[0].directionTo(ml[1]);
-//                    Direction Archon2toAchon3 = ml[1].directionTo(ml[2]);
-//                }
 
                 Direction enemyBase = rc.getLocation().directionTo(ml[0]);
 
