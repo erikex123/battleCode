@@ -96,18 +96,24 @@ public strictfp class RobotPlayer {
 
         while (true) {
             try {
-                wander();
+
                 //TODO count gardeners
                 //try to build gardeners
                 //can you build a gardener?
-                if (Math.random() < .1 && rc.canHireGardener(goingDir)) {
+                if (rc.getRoundNum()<20 && rc.canHireGardener(goingDir)){
                     rc.hireGardener(goingDir);
-                    //tryToBuild(RobotType.GARDENER, RobotType.GARDENER.bulletCost);
-                } else {
-                    wander();
                 }
-                //System.out.println("bytecode usage is "+Clock.getBytecodeNum());
-                Clock.yield();
+                else {
+
+                    if (Math.random() < .1 && rc.canHireGardener(goingDir)) {
+                        rc.hireGardener(goingDir);
+                        //tryToBuild(RobotType.GARDENER, RobotType.GARDENER.bulletCost);
+                    } else {
+                        wander();
+                    }
+                    //System.out.println("bytecode usage is "+Clock.getBytecodeNum());
+                    Clock.yield();
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -118,7 +124,7 @@ public strictfp class RobotPlayer {
         for (RobotInfo b : bot){
 
             float distanceBetween = (b.getLocation()).distanceTo(rc.getLocation());
-            if (b.getType() == RobotType.GARDENER && (b.getTeam() == rc.getTeam() ) && distanceBetween <= 8){
+            if (b.getType() == RobotType.GARDENER && (b.getTeam() == rc.getTeam() ) && distanceBetween <= 7){
                 return true;
             }
         }
@@ -155,18 +161,16 @@ public strictfp class RobotPlayer {
                         }
                         dir = dir.rotateLeftDegrees(60);
 
+
                     }
                 }
                 tryToWater();
                 tryToShake();
-
-
-                Clock.yield();
-
                 if (rc.canBuildRobot(RobotType.LUMBERJACK, goingDir) && rc.getTeamBullets() >= 50) {
 
                     rc.buildRobot(RobotType.LUMBERJACK, goingDir);
                 }
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -213,30 +217,39 @@ public strictfp class RobotPlayer {
                 Direction enemyBase = rc.getLocation().directionTo(ml[0]);
 
                 RobotInfo[] bots = rc.senseNearbyRobots();
-                for (RobotInfo b : bots) {
+                if (rc.readBroadcast(ArchonPositionX) == 0 && rc.readBroadcast(ArchonPositionY) == 0){
+                    wanderWithDirection(enemyBase);
+                } else {
+                    Direction dirToArchon = rc.getLocation().directionTo(giveMapLocationOfArchon());
+                    wanderWithDirection(dirToArchon);
+                }
+                
+                if (ThereIsEnemyBotNearBy()) {
+                    for (RobotInfo b : bots) {
 
-                    float dist = rc.getLocation().distanceTo(b.getLocation());
-                    if (b.getTeam() != rc.getTeam() && rc.canStrike() && dist <= GameConstants.LUMBERJACK_STRIKE_RADIUS + rc.getType().bodyRadius) {
-                        rc.strike();
+                        float dist = rc.getLocation().distanceTo(b.getLocation());
+                        if (b.getTeam() != rc.getTeam() && rc.canStrike() && dist <= GameConstants.LUMBERJACK_STRIKE_RADIUS + rc.getType().bodyRadius) {
+                            rc.strike();
 
-                        Direction dir = rc.getLocation().directionTo(b.getLocation());
-                        if (rc.canMove(dir)) {
-                            rc.move(dir);
+                            Direction dir = rc.getLocation().directionTo(b.getLocation());
+                            if (rc.canMove(dir)) {
+                                rc.move(dir);
+                            }
+                            break;
                         }
-                        break;
-                    }
-                    if (b.getType() == RobotType.ARCHON && b.getTeam() != rc.getTeam()) {
-                        rc.strike();
-                        Direction dir = rc.getLocation().directionTo(b.getLocation());
-                        rc.broadcast(ArchonPositionX, (int)(rc.getLocation().x));
-                        rc.broadcast(ArchonPositionY, (int)(rc.getLocation().y));
-                        if (rc.canMove(dir)) {
-                            rc.move(dir);
+                        if (b.getType() == RobotType.ARCHON && b.getTeam() != rc.getTeam()) {
+                            rc.strike();
+                            Direction dir = rc.getLocation().directionTo(b.getLocation());
+                            rc.broadcast(ArchonPositionX, (int) (rc.getLocation().x));
+                            rc.broadcast(ArchonPositionY, (int) (rc.getLocation().y));
+                            if (rc.canMove(dir)) {
+                                rc.move(dir);
+                            }
                         }
                     }
                 }
 
-                if (!ThereIsEnemyBotNearBy()) {
+                else if (!ThereIsEnemyBotNearBy()) {
 
 
                     TreeInfo[] tree = rc.senseNearbyTrees();
@@ -249,14 +262,8 @@ public strictfp class RobotPlayer {
                     }
                 }
 
-                if (rc.readBroadcast(ArchonPositionX) == 0){
-                    wanderWithDirection(enemyBase);
-                } else {
-                    Direction dirToArchon = rc.getLocation().directionTo(giveMapLocationOfArchon());
-                    wanderWithDirection(dirToArchon);
-                }
 
-                wanderWithDirection(enemyBase);
+
 //                if (!rc.hasAttacked()) {
 //                    wanderWithDirection(enemyBase);
 //                }
@@ -333,7 +340,7 @@ public strictfp class RobotPlayer {
 //                        rc.plantTree(dirList[i]);
 //                        break;
 //                    }
-//                }
+//
 //            }
 //        }
 
