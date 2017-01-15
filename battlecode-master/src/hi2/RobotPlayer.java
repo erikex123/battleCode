@@ -17,7 +17,7 @@ public strictfp class RobotPlayer {
 
     static final int ArchonPositionX = 99;
     static final int ArchonPositionY = 999;
-    static final int hello = 0;
+
 
 
     static int count = 0;
@@ -100,6 +100,8 @@ public strictfp class RobotPlayer {
                 //TODO count gardeners
                 //try to build gardeners
                 //can you build a gardener?
+
+
                 if (rc.getRoundNum()<20 && rc.canHireGardener(goingDir)){
                     rc.hireGardener(goingDir);
                 }
@@ -109,7 +111,7 @@ public strictfp class RobotPlayer {
                         rc.hireGardener(goingDir);
                         //tryToBuild(RobotType.GARDENER, RobotType.GARDENER.bulletCost);
                     } else {
-                        wander();
+                        Clock.yield();
                     }
                     //System.out.println("bytecode usage is "+Clock.getBytecodeNum());
                     Clock.yield();
@@ -139,8 +141,6 @@ public strictfp class RobotPlayer {
         Direction dir = Direction.NORTH;
         int NumOfTrees = 0 ;
 
-
-
         rc.donate(10);
         while (true) {
             try {
@@ -166,10 +166,15 @@ public strictfp class RobotPlayer {
                 }
                 tryToWater();
                 tryToShake();
-                if (rc.canBuildRobot(RobotType.LUMBERJACK, goingDir) && rc.getTeamBullets() >= 50) {
+                for (int i = 0 ; i < 5; i ++){
+                    if (rc.canBuildRobot(RobotType.LUMBERJACK, dir)) {
 
-                    rc.buildRobot(RobotType.LUMBERJACK, goingDir);
+                        rc.buildRobot(RobotType.LUMBERJACK, dir);
+                        break;
+                    }
+                    dir = dir.rotateLeftDegrees(60);
                 }
+
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -199,9 +204,6 @@ public strictfp class RobotPlayer {
          boolean archonCount  = true ;
         while (true && archonCount) {
             try {
-
-
-
                 dodge();
 
                 MapLocation[] ml = rc.getInitialArchonLocations(rc.getTeam().opponent());
@@ -217,12 +219,7 @@ public strictfp class RobotPlayer {
                 Direction enemyBase = rc.getLocation().directionTo(ml[0]);
 
                 RobotInfo[] bots = rc.senseNearbyRobots();
-                if (rc.readBroadcast(ArchonPositionX) == 0 && rc.readBroadcast(ArchonPositionY) == 0){
-                    wanderWithDirection(enemyBase);
-                } else {
-                    Direction dirToArchon = rc.getLocation().directionTo(giveMapLocationOfArchon());
-                    wanderWithDirection(dirToArchon);
-                }
+
 
                 if (ThereIsEnemyBotNearBy()) {
                     for (RobotInfo b : bots) {
@@ -250,7 +247,12 @@ public strictfp class RobotPlayer {
                 }
 
                 else if (!ThereIsEnemyBotNearBy()) {
-
+                    if (rc.readBroadcast(ArchonPositionX) == 0 && rc.readBroadcast(ArchonPositionY) == 0){
+                        wanderWithDirection(enemyBase);
+                    } else {
+                        Direction dirToArchon = rc.getLocation().directionTo(giveMapLocationOfArchon());
+                        wanderWithDirection(dirToArchon);
+                    }
 
                     TreeInfo[] tree = rc.senseNearbyTrees();
                     for (TreeInfo t : tree) {
