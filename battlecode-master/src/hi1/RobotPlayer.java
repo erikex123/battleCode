@@ -34,8 +34,6 @@ public strictfp class RobotPlayer {
                 break;
             case GARDENER:
                 runGardener();
-
-
                 break;
             case SOLDIER:
                 runSoldier();
@@ -43,6 +41,8 @@ public strictfp class RobotPlayer {
             case LUMBERJACK:
                 runLumberjack();
                 break;
+            case SCOUT:
+                runScout();
         }
     }
 
@@ -143,6 +143,10 @@ public strictfp class RobotPlayer {
     }
 
     public static void runSoldier() {
+
+    }
+
+    public static void runScout(){
 
     }
 
