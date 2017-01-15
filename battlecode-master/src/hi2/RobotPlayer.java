@@ -15,9 +15,11 @@ public strictfp class RobotPlayer {
     static Direction goingDir;
     static Random rand;
 
+    static final int ArchonPositionX = 99;
+    static final int ArchonPositionY = 999;
+
 
     static int count = 0;
-
 
 
     static List<String> idArr = new ArrayList<String>();
@@ -74,19 +76,18 @@ public strictfp class RobotPlayer {
     }
 
 
-    public static void directionalTravel(Direction dir ){
+    public static void directionalTravel(Direction dir) {
         try {
-            if (rc.canMove(dir)){
+            if (rc.canMove(dir)) {
                 rc.move(dir);
-            }else{
+            } else {
                 wander();
             }
 
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
 
 
     // robots classes
@@ -98,10 +99,12 @@ public strictfp class RobotPlayer {
                 //TODO count gardeners
                 //try to build gardeners
                 //can you build a gardener?
-                if (Math.random() < .1 &&rc.canHireGardener(goingDir)){
+                if (Math.random() < .1 && rc.canHireGardener(goingDir)) {
                     rc.hireGardener(goingDir);
                     //tryToBuild(RobotType.GARDENER, RobotType.GARDENER.bulletCost);
-                }else{wander();}
+                } else {
+                    wander();
+                }
                 //System.out.println("bytecode usage is "+Clock.getBytecodeNum());
                 Clock.yield();
             } catch (Exception e) {
@@ -110,7 +113,7 @@ public strictfp class RobotPlayer {
         }
     }
 
-    public static void runGardener() throws GameActionException{
+    public static void runGardener() throws GameActionException {
         count++;
         rc.donate(10);
         while (true) {
@@ -136,9 +139,9 @@ public strictfp class RobotPlayer {
                 }
                 Clock.yield();
 
-                if (rc.canBuildRobot(RobotType.LUMBERJACK, goingDir) && rc.getTeamBullets() >= 50){
+                if (rc.canBuildRobot(RobotType.LUMBERJACK, goingDir) && rc.getTeamBullets() >= 50) {
 
-                    rc.buildRobot(RobotType.LUMBERJACK, goingDir );
+                    rc.buildRobot(RobotType.LUMBERJACK, goingDir);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -146,22 +149,42 @@ public strictfp class RobotPlayer {
         }
     }
 
+    static MapLocation giveMapLocationOfArchon() throws GameActionException {
+       float positionX = rc.readBroadcast(ArchonPositionX);
+       float positionY = rc.readBroadcast(ArchonPositionY);
+
+       MapLocation archonLocation = new MapLocation(positionX, positionY);
+
+       return archonLocation;
+
+    }
+
     public static void runSoldier() {
 
     }
 
-    public static void runScout(){
+    public static void runScout() {
 
     }
 
     public static void runLumberjack() throws GameActionException {
-
-        while (true) {
+         boolean archonCount  = true ;
+        while (true && archonCount) {
             try {
+
+
 
                 dodge();
 
                 MapLocation[] ml = rc.getInitialArchonLocations(rc.getTeam().opponent());
+
+                if (ml.length == 2 ){
+                    Direction Archon1toAchon2 = ml[0].directionTo(ml[1]);
+                }
+                else if (ml.length == 3){
+                    Direction Archon1toAchon2 = ml[0].directionTo(ml[1]);
+                    Direction Archon2toAchon3 = ml[1].directionTo(ml[2]);
+                }
 
                 Direction enemyBase = rc.getLocation().directionTo(ml[0]);
 
@@ -178,6 +201,15 @@ public strictfp class RobotPlayer {
                         }
                         break;
                     }
+                    if (b.getType() == RobotType.ARCHON && b.getTeam() != rc.getTeam()) {
+                        rc.strike();
+                        Direction dir = rc.getLocation().directionTo(b.getLocation());
+                        rc.broadcast(ArchonPositionX, (int)(rc.getLocation().x));
+                        rc.broadcast(ArchonPositionY, (int)(rc.getLocation().y));
+                        if (rc.canMove(dir)) {
+                            rc.move(dir);
+                        }
+                    }
                 }
 
                 if (!ThereIsEnemyBotNearBy()) {
@@ -193,23 +225,35 @@ public strictfp class RobotPlayer {
                     }
                 }
 
-                if (!rc.hasAttacked()) {
+                if (rc.readBroadcast(ArchonPositionX) == 0){
                     wanderWithDirection(enemyBase);
+                } else {
+                    Direction dirToArchon = rc.getLocation().directionTo(giveMapLocationOfArchon());
+                    wanderWithDirection(dirToArchon);
                 }
+
+                wanderWithDirection(enemyBase);
+//                if (!rc.hasAttacked()) {
+//                    wanderWithDirection(enemyBase);
+//                }
                 Clock.yield();
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
 
+        while (archonCount == false){
+
+        }
+
 
     }
 
-    public static boolean ThereIsEnemyBotNearBy(){
+    public static boolean ThereIsEnemyBotNearBy() throws GameActionException {
         RobotInfo[] bots = rc.senseNearbyRobots();
 
-        for (RobotInfo b : bots){
-            if (b.getTeam() != rc.getTeam()){
+        for (RobotInfo b : bots) {
+            if (b.getTeam() != rc.getTeam()) {
                 return true;
             }
         }
@@ -229,10 +273,11 @@ public strictfp class RobotPlayer {
                 }
         }
     }
+
     public static void tryToShake() throws GameActionException {
         if (rc.canShake()) {
             TreeInfo[] nearbyTrees = rc.senseNearbyTrees();
-            for (int i = 0; i < nearbyTrees.length; i++){
+            for (int i = 0; i < nearbyTrees.length; i++) {
                 rc.shake(nearbyTrees[i].getID());
             }
         }
@@ -252,8 +297,6 @@ public strictfp class RobotPlayer {
     }
 
 
-
-
     public static void tryToPlant() throws GameActionException {
         //try to build gardeners
         //can you build a gardener?
@@ -271,19 +314,12 @@ public strictfp class RobotPlayer {
         }
     }
 
-    public static  void negativefeedBack(RobotType type   ,int keepingConstant){
-
-        // negative feedback system to hold constant
-
-    }
-
-    public static int getCount(RobotType type){
-        //count the number of Robot
-        return 0;
-    }
 
 
-    static boolean willCollideWithMe(BulletInfo bullet){
+
+
+
+    static boolean willCollideWithMe(BulletInfo bullet) throws GameActionException {
         MapLocation mylocation = rc.getLocation();
 
         //get relevant bullet information
@@ -296,7 +332,7 @@ public strictfp class RobotPlayer {
         float distToRobot = bulletLocation.distanceTo(mylocation);
         float theta = propagationDirecion.radiansBetween(directionToRobot);
 
-        if (Math.abs(theta) >= Math.PI/2){
+        if (Math.abs(theta) >= Math.PI / 2) {
             return false;
         }
 
@@ -310,33 +346,31 @@ public strictfp class RobotPlayer {
     //try slide step
 
 
-
-
-
     public static boolean modGood(float number, float spacing, float fraction) {
         return (number % spacing) < spacing * fraction;
     }
 
-    static void wanderWithDirection(Direction dir) throws GameActionException{
+    static void wanderWithDirection(Direction dir) throws GameActionException {
 
         double rand = Math.random();
 
-        if (0< rand  && rand <= 0.5 ){
+        if (0 < rand && rand <= 0.5) {
             tryMove(dir);
         }
-        if (0.5 < rand && rand <= 0.66666){
+        if (0.5 < rand && rand <= 0.66666) {
             tryMove(dir.rotateLeftDegrees(90));
         }
-        if (0.66666 < rand && rand <= 0.866666){
+        if (0.66666 < rand && rand <= 0.866666) {
             tryMove(dir.rotateLeftDegrees(180));
         }
-        if (0.866666 < rand && rand <= 1){
+        if (0.866666 < rand && rand <= 1) {
             tryMove(dir.rotateLeftDegrees(270));
         }
 
     }
+
     static boolean tryMove(Direction dir) throws GameActionException {
-        return tryMove(dir,20,3);
+        return tryMove(dir, 20, 3);
     }
 
     static boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
@@ -351,15 +385,15 @@ public strictfp class RobotPlayer {
         //boolean moved = rc.hasMoved();
         int currentCheck = 1;
 
-        while(currentCheck<=checksPerSide) {
+        while (currentCheck <= checksPerSide) {
             // Try the offset of the left side
-            if(!rc.hasMoved() && rc.canMove(dir.rotateLeftDegrees(degreeOffset*currentCheck))) {
-                rc.move(dir.rotateLeftDegrees(degreeOffset*currentCheck));
+            if (!rc.hasMoved() && rc.canMove(dir.rotateLeftDegrees(degreeOffset * currentCheck))) {
+                rc.move(dir.rotateLeftDegrees(degreeOffset * currentCheck));
                 return true;
             }
             // Try the offset on the right side
-            if(! rc.hasMoved() && rc.canMove(dir.rotateRightDegrees(degreeOffset*currentCheck))) {
-                rc.move(dir.rotateRightDegrees(degreeOffset*currentCheck));
+            if (!rc.hasMoved() && rc.canMove(dir.rotateRightDegrees(degreeOffset * currentCheck))) {
+                rc.move(dir.rotateRightDegrees(degreeOffset * currentCheck));
                 return true;
             }
             // No move performed, try slightly further
@@ -371,13 +405,13 @@ public strictfp class RobotPlayer {
     }
 
 
-    static boolean trySidestep(BulletInfo bullet) throws GameActionException{
+    static boolean trySidestep(BulletInfo bullet) throws GameActionException {
 
         Direction towards = bullet.getDir();
         MapLocation leftGoal = rc.getLocation().add(towards.rotateLeftDegrees(90), rc.getType().bodyRadius);
         MapLocation rightGoal = rc.getLocation().add(towards.rotateRightDegrees(90), rc.getType().bodyRadius);
 
-        return(tryMove(towards.rotateRightDegrees(90)) || tryMove(towards.rotateLeftDegrees(90)));
+        return (tryMove(towards.rotateRightDegrees(90)) || tryMove(towards.rotateLeftDegrees(90)));
     }
 
     static void dodge() throws GameActionException {
@@ -387,6 +421,7 @@ public strictfp class RobotPlayer {
                 trySidestep(bi);
             }
         }
+
 
     }
 }
