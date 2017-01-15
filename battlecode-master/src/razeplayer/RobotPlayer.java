@@ -12,9 +12,10 @@ public strictfp class RobotPlayer {
     // Keep broadcast channels
     static int GARDENER_CHANNEL = 5;
     static int LUMBERJACK_CHANNEL = 6;
+    static int ARCHON_Location = 20;
 
     // Keep important numbers here
-    static int GARDENER_MAX = 4;
+    static int GARDENER_MAX = 8;
     static int LUMBERJACK_MAX = 10;
 
     public static void run(RobotController rc) throws GameActionException {
@@ -44,13 +45,32 @@ public strictfp class RobotPlayer {
     static void runArchon() throws GameActionException {
         while (true) {
             try {
+
                 Direction dir = randomDirection();
                 int prevNumGard = rc.readBroadcast(GARDENER_CHANNEL);
                 rc.broadcast(GARDENER_CHANNEL, 0);
-                if (prevNumGard < GARDENER_MAX && rc.canHireGardener(dir)) {
-                    rc.hireGardener(dir);
+                
+
+                CountHowManyRobotNearBy(rc.getLocation(), Direction.NORTH);
+
+                if (CountHowManyRobotNearBy(rc.getLocation(), Direction.NORTH) <= 2 && prevNumGard < GARDENER_MAX && rc.onTheMap((rc.getLocation().add(Direction.NORTH,10))) && rc.canHireGardener(Direction.NORTH)){
+                    rc.hireGardener(Direction.NORTH);
                     rc.broadcast(GARDENER_CHANNEL, prevNumGard + 1);
                 }
+                if (prevNumGard < GARDENER_MAX && rc.onTheMap((rc.getLocation().add(Direction.EAST,10))) && rc.canHireGardener(Direction.EAST)){
+                    rc.hireGardener(Direction.EAST);
+                    rc.broadcast(GARDENER_CHANNEL, prevNumGard + 1);
+                }
+                if (prevNumGard < GARDENER_MAX && rc.onTheMap((rc.getLocation().add(Direction.WEST,10))) && rc.canHireGardener(Direction.WEST)){
+                    rc.hireGardener(Direction.WEST);
+                    rc.broadcast(GARDENER_CHANNEL, prevNumGard + 1);
+                }
+                if (prevNumGard < GARDENER_MAX && rc.onTheMap((rc.getLocation().add(Direction.SOUTH,10))) && rc.canHireGardener(Direction.SOUTH)){
+                    rc.hireGardener(Direction.SOUTH);
+                    rc.broadcast(GARDENER_CHANNEL, prevNumGard + 1);
+                }
+
+
                 Clock.yield();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -63,22 +83,18 @@ public strictfp class RobotPlayer {
             try {
                 dodge();
                 System.out.println(Clock.getBytecodesLeft());
+
                 int prev = rc.readBroadcast(GARDENER_CHANNEL);
                 rc.broadcast(GARDENER_CHANNEL, prev+1);
                 wander();
                 Direction dir = randomDirection();
-                if (rc.getRoundNum() < 500) {
-                    int prevNumGard = rc.readBroadcast(LUMBERJACK_CHANNEL);
-                    if (prevNumGard <= LUMBERJACK_MAX && rc.canBuildRobot(RobotType.LUMBERJACK, dir)) {
+                int prevNumGard = rc.readBroadcast(LUMBERJACK_CHANNEL);
+                if (prevNumGard <= LUMBERJACK_MAX && rc.canBuildRobot(RobotType.LUMBERJACK, dir)) {
                         rc.buildRobot(RobotType.LUMBERJACK, dir);
                         rc.broadcast(LUMBERJACK_CHANNEL, prevNumGard + 1);
-                    }
+
                 }
-                else {
-                    if (rc.canBuildRobot(RobotType.SOLDIER, Direction.getEast())) {
-                        rc.buildRobot(RobotType.SOLDIER, Direction.getEast());
-                    }
-                }
+
 
                 Clock.yield();
             } catch (Exception e) {
@@ -243,5 +259,43 @@ public strictfp class RobotPlayer {
         }
 
     }
+
+    static void movementGardener(){
+        RobotInfo[] nearBy = rc.senseNearbyRobots();
+
+        for (RobotInfo R : nearBy){
+            if (R.getType() == RobotType.ARCHON){
+
+            }
+        }
+
+    }
+
+    /**
+     *  check to see how many robot are in a particular direction with respect to the inspecter
+     *
+     * @param location location of the inspector
+     * @param DDD the particular direction
+     * @return  int
+     */
+
+    static int CountHowManyRobotNearBy(MapLocation location, Direction DDD){
+
+        RobotInfo[] R = rc.senseNearbyRobots(location, 25, rc.getTeam());
+
+        int count = 0 ;
+        for (RobotInfo senseingRobot: R){
+            if( senseingRobot.getType() == RobotType.GARDENER){
+                Direction dir = location.directionTo(senseingRobot.getLocation());
+                if (DDD == dir){
+                    count += 1;
+                }
+            }
+        }
+
+        return count;
+
+    }
+
 
 }
