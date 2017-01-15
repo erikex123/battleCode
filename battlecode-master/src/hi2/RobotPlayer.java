@@ -103,7 +103,7 @@ public strictfp class RobotPlayer {
 
                 wander();
 
-                goingDir = 
+                goingDir =
 
                     if (rc.getRoundNum() < 50 && rc.canHireGardener(goingDir)) {
                         rc.hireGardener(goingDir);
