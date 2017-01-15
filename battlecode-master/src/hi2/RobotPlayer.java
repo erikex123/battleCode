@@ -101,21 +101,28 @@ public strictfp class RobotPlayer {
                 //try to build gardeners
                 //can you build a gardener?
 
+                wander();
 
-                if (rc.getRoundNum()<20 && rc.canHireGardener(goingDir)){
-                    rc.hireGardener(goingDir);
-                }
-                else {
+                goingDir = 
 
-                    if (Math.random() < .1 && rc.canHireGardener(goingDir)) {
+                    if (rc.getRoundNum() < 50 && rc.canHireGardener(goingDir)) {
                         rc.hireGardener(goingDir);
-                        //tryToBuild(RobotType.GARDENER, RobotType.GARDENER.bulletCost);
+                        rc.hireGardener(goingDir.rotateLeftDegrees(60));
+                        // here we hire two gradener first
                     } else {
+
+                        if (Math.random() < .1 && rc.canHireGardener(goingDir)) {
+                            rc.hireGardener(goingDir);
+                            //tryToBuild(RobotType.GARDENER, RobotType.GARDENER.bulletCost);
+                        } else {
+                            Clock.yield();
+                        }
+                        //System.out.println("bytecode usage is "+Clock.getBytecodeNum());
                         Clock.yield();
                     }
-                    //System.out.println("bytecode usage is "+Clock.getBytecodeNum());
-                    Clock.yield();
-                }
+
+
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -148,19 +155,26 @@ public strictfp class RobotPlayer {
                 if (checkIfSurroundinghaveGardener(rc.getLocation())){
                     if (rc.canMove(goingDir)) {
                     rc.move(goingDir);
-                } else {
+                    } else {
                     goingDir = randomDir();
-                }
+                    }
                 }else {
 
                     while (NumOfTrees < 5) {
 
+                        if (rc.canBuildRobot(RobotType.LUMBERJACK, dir.rotateLeftDegrees(60))) {
+
+                        rc.buildRobot(RobotType.LUMBERJACK, dir.rotateLeftDegrees(60));
+
+                        }
                         if (rc.canPlantTree(dir)) {
                             rc.plantTree(dir);
                             NumOfTrees++;
                         }
-                        dir = dir.rotateLeftDegrees(60);
+                        tryToWater();
+                        tryToShake();
 
+                        dir = dir.rotateLeftDegrees(60);
 
                     }
                 }
@@ -201,8 +215,8 @@ public strictfp class RobotPlayer {
     }
 
     public static void runLumberjack() throws GameActionException {
-         boolean archonCount  = true ;
-        while (true && archonCount) {
+
+        while (true ) {
             try {
                 dodge();
 
@@ -275,9 +289,6 @@ public strictfp class RobotPlayer {
             }
         }
 
-        while (archonCount == false){
-
-        }
 
 
     }
