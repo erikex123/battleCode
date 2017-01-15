@@ -169,9 +169,9 @@ public strictfp class RobotPlayer {
                 tryToWater();
                 tryToShake();
                 for (int i = 0 ; i < 5; i ++){
-                    if (rc.canBuildRobot(RobotType.LUMBERJACK, dir)) {
+                    if (rc.canBuildRobot(RobotType.SCOUT, dir)) {
 
-                        rc.buildRobot(RobotType.LUMBERJACK, dir);
+                        rc.buildRobot(RobotType.SCOUT, dir);
                         break;
                     }
                     dir = dir.rotateLeftDegrees(60);
@@ -217,6 +217,12 @@ public strictfp class RobotPlayer {
 
                 if (rc.readBroadcast(ScoutEnemyBasePositionX) == 0 && rc.readBroadcast(ScoutEnemyBasePositionY) == 0){
                     wanderWithDirection(enemyBase);
+                    for (RobotInfo b: bots){
+                        if (b.getType() == RobotType.ARCHON && b.getTeam() != rc.getTeam()) {
+                            rc.broadcast(ScoutEnemyBasePositionX, (int) (rc.getLocation().x));
+                            rc.broadcast(ScoutEnemyBasePositionY, (int) (rc.getLocation().y));
+                        }
+                    }
                 }else{
                     if (ThereIsEnemyBotNearBy()) {
                         for (RobotInfo b : bots) {
@@ -232,13 +238,8 @@ public strictfp class RobotPlayer {
                                 }
 
                             }
-                            if (b.getType() == RobotType.ARCHON && b.getTeam() != rc.getTeam()) {
-                                rc.broadcast(ScoutEnemyBasePositionX, (int) (rc.getLocation().x));
-                                rc.broadcast(ScoutEnemyBasePositionY, (int) (rc.getLocation().y));
-                            }
                         }
                     }else{
-
                             Direction dirToArchon = rc.getLocation().directionTo(giveMapLocationOfArchon(ScoutEnemyBasePositionX,ScoutEnemyBasePositionY));
                             wanderWithDirection(dirToArchon);
 
