@@ -1,4 +1,5 @@
-package hi1;
+package hi2;
+
 import battlecode.common.*;
 
 import java.util.List;
@@ -89,7 +90,7 @@ public strictfp class RobotPlayer {
 
 
     // robots classes
-    public static void runArchon() throws GameActionException {
+    public static void runArchon() {
 
         while (true) {
             try {
@@ -97,7 +98,7 @@ public strictfp class RobotPlayer {
                 //TODO count gardeners
                 //try to build gardeners
                 //can you build a gardener?
-                if (Math.random() < .01 &&rc.canHireGardener(goingDir)){
+                if (Math.random() < .1 &&rc.canHireGardener(goingDir)){
                     rc.hireGardener(goingDir);
                     //tryToBuild(RobotType.GARDENER, RobotType.GARDENER.bulletCost);
                 }else{wander();}
@@ -109,12 +110,15 @@ public strictfp class RobotPlayer {
         }
     }
 
-    public static void runGardener() {
+    public static void runGardener() throws GameActionException{
         count++;
+        rc.donate(10);
         while (true) {
             try {
 
                 wander();
+
+                dodge();
 
                 //dodge();
                 //first try to plant trees
@@ -155,6 +159,12 @@ public strictfp class RobotPlayer {
         while (true) {
             try {
 
+                dodge();
+
+                MapLocation[] ml = rc.getInitialArchonLocations(rc.getTeam().opponent());
+
+                Direction enemyBase = rc.getLocation().directionTo(ml[0]);
+
                 RobotInfo[] bots = rc.senseNearbyRobots();
                 for (RobotInfo b : bots) {
 
@@ -170,16 +180,21 @@ public strictfp class RobotPlayer {
                     }
                 }
 
+                if (!ThereIsEnemyBotNearBy()) {
 
-                TreeInfo[] tree = rc.senseNearbyTrees();
-                for (TreeInfo t : tree) {
-                    if (rc.canChop(t.getID()) && t.getTeam() != rc.getTeam()) {
-                        rc.chop(t.getID());
-                        break;
+
+                    TreeInfo[] tree = rc.senseNearbyTrees();
+                    for (TreeInfo t : tree) {
+
+                        if (rc.canChop(t.getID()) && t.getTeam() != rc.getTeam()) {
+                            rc.chop(t.getID());
+                            break;
+                        }
                     }
                 }
+
                 if (!rc.hasAttacked()) {
-                    wander();
+                    wanderWithDirection(enemyBase);
                 }
                 Clock.yield();
             } catch (Exception e) {
@@ -187,6 +202,19 @@ public strictfp class RobotPlayer {
             }
         }
 
+
+    }
+
+    public static boolean ThereIsEnemyBotNearBy(){
+        RobotInfo[] bots = rc.senseNearbyRobots();
+
+        for (RobotInfo b : bots){
+            if (b.getTeam() != rc.getTeam()){
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static void tryToWater() throws GameActionException {
@@ -281,35 +309,84 @@ public strictfp class RobotPlayer {
 
     //try slide step
 
-    static void trySideStep(BulletInfo bullet ) throws GameActionException{
-        Direction towards = bullet.getDir();
-        Direction directionToRobot = bullet.getLocation().directionTo(rc.getLocation());
 
-        if (towards.radians >0){
-            if (directionToRobot.radians - towards.radians > 0){
-                rc.move(towards.rotateLeftDegrees(45));
-            }else rc.move(towards.rotateRightDegrees(45));
-        }
-        else if (towards.radians < 0){
-            if (directionToRobot.radians - towards.radians > 0){
-                rc.move(towards.rotateRightDegrees(45));
-            }else  rc.move(towards.rotateLeftDegrees(45));
-        }
-
-    }
-
-    static void dodge() throws GameActionException{
-        BulletInfo[] bullet = rc.senseNearbyBullets();
-        for(BulletInfo b : bullet ){
-            if (willCollideWithMe(b)) {
-                trySideStep(b);
-            }
-        }
-    }
 
 
 
     public static boolean modGood(float number, float spacing, float fraction) {
         return (number % spacing) < spacing * fraction;
+    }
+
+    static void wanderWithDirection(Direction dir) throws GameActionException{
+
+        double rand = Math.random();
+
+        if (0< rand  && rand <= 0.5 ){
+            tryMove(dir);
+        }
+        if (0.5 < rand && rand <= 0.66666){
+            tryMove(dir.rotateLeftDegrees(90));
+        }
+        if (0.66666 < rand && rand <= 0.866666){
+            tryMove(dir.rotateLeftDegrees(180));
+        }
+        if (0.866666 < rand && rand <= 1){
+            tryMove(dir.rotateLeftDegrees(270));
+        }
+
+    }
+    static boolean tryMove(Direction dir) throws GameActionException {
+        return tryMove(dir,20,3);
+    }
+
+    static boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
+
+        // First, try intended direction
+        if (!rc.hasMoved() && rc.canMove(dir)) {
+            rc.move(dir);
+            return true;
+        }
+
+        // Now try a bunch of similar angles
+        //boolean moved = rc.hasMoved();
+        int currentCheck = 1;
+
+        while(currentCheck<=checksPerSide) {
+            // Try the offset of the left side
+            if(!rc.hasMoved() && rc.canMove(dir.rotateLeftDegrees(degreeOffset*currentCheck))) {
+                rc.move(dir.rotateLeftDegrees(degreeOffset*currentCheck));
+                return true;
+            }
+            // Try the offset on the right side
+            if(! rc.hasMoved() && rc.canMove(dir.rotateRightDegrees(degreeOffset*currentCheck))) {
+                rc.move(dir.rotateRightDegrees(degreeOffset*currentCheck));
+                return true;
+            }
+            // No move performed, try slightly further
+            currentCheck++;
+        }
+
+        // A move never happened, so return false.
+        return false;
+    }
+
+
+    static boolean trySidestep(BulletInfo bullet) throws GameActionException{
+
+        Direction towards = bullet.getDir();
+        MapLocation leftGoal = rc.getLocation().add(towards.rotateLeftDegrees(90), rc.getType().bodyRadius);
+        MapLocation rightGoal = rc.getLocation().add(towards.rotateRightDegrees(90), rc.getType().bodyRadius);
+
+        return(tryMove(towards.rotateRightDegrees(90)) || tryMove(towards.rotateLeftDegrees(90)));
+    }
+
+    static void dodge() throws GameActionException {
+        BulletInfo[] bullets = rc.senseNearbyBullets();
+        for (BulletInfo bi : bullets) {
+            if (willCollideWithMe(bi)) {
+                trySidestep(bi);
+            }
+        }
+
     }
 }

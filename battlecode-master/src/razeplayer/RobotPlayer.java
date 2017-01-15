@@ -49,24 +49,28 @@ public strictfp class RobotPlayer {
                 Direction dir = randomDirection();
                 int prevNumGard = rc.readBroadcast(GARDENER_CHANNEL);
                 rc.broadcast(GARDENER_CHANNEL, 0);
-                
 
-                CountHowManyRobotNearBy(rc.getLocation(), Direction.NORTH);
 
-                if (CountHowManyRobotNearBy(rc.getLocation(), Direction.NORTH) <= 2 && prevNumGard < GARDENER_MAX && rc.onTheMap((rc.getLocation().add(Direction.NORTH,10))) && rc.canHireGardener(Direction.NORTH)){
-                    rc.hireGardener(Direction.NORTH);
-                    rc.broadcast(GARDENER_CHANNEL, prevNumGard + 1);
-                }
-                if (prevNumGard < GARDENER_MAX && rc.onTheMap((rc.getLocation().add(Direction.EAST,10))) && rc.canHireGardener(Direction.EAST)){
-                    rc.hireGardener(Direction.EAST);
-                    rc.broadcast(GARDENER_CHANNEL, prevNumGard + 1);
-                }
-                if (prevNumGard < GARDENER_MAX && rc.onTheMap((rc.getLocation().add(Direction.WEST,10))) && rc.canHireGardener(Direction.WEST)){
-                    rc.hireGardener(Direction.WEST);
-                    rc.broadcast(GARDENER_CHANNEL, prevNumGard + 1);
-                }
-                if (prevNumGard < GARDENER_MAX && rc.onTheMap((rc.getLocation().add(Direction.SOUTH,10))) && rc.canHireGardener(Direction.SOUTH)){
-                    rc.hireGardener(Direction.SOUTH);
+//
+//                if (CountHowManyRobotNearBy(rc.getLocation(), Direction.NORTH) <= 2 && prevNumGard < GARDENER_MAX && rc.onTheMap((rc.getLocation().add(Direction.NORTH,10))) && rc.canHireGardener(Direction.NORTH)){
+//                    rc.hireGardener(Direction.NORTH);
+//                    rc.broadcast(GARDENER_CHANNEL, prevNumGard + 1);
+//                }
+//                if (CountHowManyRobotNearBy(rc.getLocation(), Direction.EAST) <= 2 && prevNumGard < GARDENER_MAX && rc.onTheMap((rc.getLocation().add(Direction.EAST,10))) && rc.canHireGardener(Direction.EAST)){
+//                    rc.hireGardener(Direction.EAST);
+//                    rc.broadcast(GARDENER_CHANNEL, prevNumGard + 1);
+//                }
+//                if (CountHowManyRobotNearBy(rc.getLocation(), Direction.WEST) <= 2 && prevNumGard < GARDENER_MAX && rc.onTheMap((rc.getLocation().add(Direction.WEST,10))) && rc.canHireGardener(Direction.WEST)){
+//                    rc.hireGardener(Direction.WEST);
+//                    rc.broadcast(GARDENER_CHANNEL, prevNumGard + 1);
+//                }
+//                if (CountHowManyRobotNearBy(rc.getLocation(), Direction.SOUTH) <= 2 && prevNumGard < GARDENER_MAX && rc.onTheMap((rc.getLocation().add(Direction.SOUTH,10))) && rc.canHireGardener(Direction.SOUTH)){
+//                    rc.hireGardener(Direction.SOUTH);
+//                    rc.broadcast(GARDENER_CHANNEL, prevNumGard + 1);
+//                }
+
+                if (prevNumGard < GARDENER_MAX && rc.canHireGardener(dir)){
+                    rc.hireGardener(dir);
                     rc.broadcast(GARDENER_CHANNEL, prevNumGard + 1);
                 }
 
@@ -82,11 +86,13 @@ public strictfp class RobotPlayer {
         while (true) {
             try {
                 dodge();
-                System.out.println(Clock.getBytecodesLeft());
+
 
                 int prev = rc.readBroadcast(GARDENER_CHANNEL);
                 rc.broadcast(GARDENER_CHANNEL, prev+1);
                 wander();
+
+
                 Direction dir = randomDirection();
                 int prevNumGard = rc.readBroadcast(LUMBERJACK_CHANNEL);
                 if (prevNumGard <= LUMBERJACK_MAX && rc.canBuildRobot(RobotType.LUMBERJACK, dir)) {
@@ -143,7 +149,7 @@ public strictfp class RobotPlayer {
                     }
                 }
                 if (! rc.hasAttacked()) {
-                    wander();
+                    wanderWithDirection(Direction.EAST);
                 }
                 Clock.yield();
             } catch (Exception e) {
@@ -294,6 +300,25 @@ public strictfp class RobotPlayer {
         }
 
         return count;
+
+    }
+
+    static void wanderWithDirection(Direction dir) throws GameActionException{
+
+        double rand = Math.random();
+
+        if (0< rand  && rand <= 0.5 ){
+             tryMove(dir);
+        }
+        if (0.5 < rand && rand <= 0.66666){
+            tryMove(dir.rotateLeftDegrees(90));
+        }
+        if (0.66666 < rand && rand <= 0.866666){
+            tryMove(dir.rotateLeftDegrees(180));
+        }
+        if (0.866666 < rand && rand <= 1){
+            tryMove(dir.rotateLeftDegrees(270));
+        }
 
     }
 
