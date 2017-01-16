@@ -17,6 +17,10 @@ public strictfp class RobotPlayer {
 
     static final int ArchonPositionX = 99;
     static final int ArchonPositionY = 999;
+    static final int GardenerPositionX = 100;
+    static final int GardenerPositionY = 101;
+    static final int InitialScout=102;
+
 
 
 
@@ -105,11 +109,18 @@ public strictfp class RobotPlayer {
         }
 
     }
+    public static void GardenerBroadcast(RobotInfo b) throws GameActionException {
+        if (b.getType() == RobotType.GARDENER && b.getTeam() != rc.getTeam()) {
+            rc.broadcast(GardenerPositionX, (int) (b.getLocation().x));
+            rc.broadcast(GardenerPositionY, (int) (b.getLocation().y));
+        }
+
+    }
 
     // robots classes
     public static void runArchon() {
 
-        while (true) {
+        while (count<10||Math.random()<0.4) {
             try {
 
                 //TODO count gardeners
@@ -160,6 +171,11 @@ public strictfp class RobotPlayer {
         Direction dir = Direction.NORTH;
         int NumOfTrees = 0 ;
 
+        if (rc.readBroadcast(InitialScout)<2&&Math.random()<0.8){
+            buildAndCheckRobotByGardener(RobotType.SCOUT,dir);
+            rc.broadcast(InitialScout,rc.readBroadcast(InitialScout)+1);
+        }
+
         while (true) {
             try {
 
@@ -172,7 +188,7 @@ public strictfp class RobotPlayer {
                 }else {
                     while (NumOfTrees < 3) {
                         while (rc.getTeamBullets() > 80 && rc.canBuildRobot(RobotType.SCOUT, dir)&&scout_count<3){
-                            rc.buildRobot(RobotType.SCOUT, dir);
+                            buildAndCheckRobotByGardener(RobotType.SCOUT, dir);
                             scout_count++;
                         }
                         if (rc.canPlantTree(dir)) {
@@ -208,9 +224,9 @@ public strictfp class RobotPlayer {
 //                        buildAndCheckRobotByGardener(RobotType.SOLDIER,dir);
 //                    }
                         if (i % 2 == 0) {
-                            buildAndCheckRobotByGardener(RobotType.LUMBERJACK, dir);
-                        } else {
                             buildAndCheckRobotByGardener(RobotType.SOLDIER, dir);
+                        } else {
+                            buildAndCheckRobotByGardener(RobotType.LUMBERJACK, dir);
                         }
                         dir = dir.rotateLeftDegrees(60);
                     }
@@ -289,8 +305,8 @@ public strictfp class RobotPlayer {
                     for(RobotInfo b: bots){
                         Direction dir = rc.getLocation().directionTo(b.getLocation());
                         ArchonBroadcast(b);
+                        GardenerBroadcast(b);
                         if (b.getTeam()!=rc.getTeam()){
-                            ArchonBroadcast(b);
                             if (rc.canFirePentadShot()&&rc.getTeamBullets()>=1000&&checkFriendlyFire(dir)){
                                 rc.firePentadShot(dir);
                             }
@@ -353,11 +369,13 @@ public strictfp class RobotPlayer {
                     directionalTravel(enemyBase);
                     for (RobotInfo b: bots){
                         ArchonBroadcast(b);
+                        GardenerBroadcast(b);
                     }
                 }else{
                     if (ThereIsEnemyBotNearBy()) {
                         for (RobotInfo b : bots) {
                             ArchonBroadcast(b);
+                            GardenerBroadcast(b);
                             Direction dir = rc.getLocation().directionTo(b.getLocation());
                             if (b.getTeam() != rc.getTeam()) {
 
@@ -407,6 +425,7 @@ public strictfp class RobotPlayer {
                 if (ThereIsEnemyBotNearBy()) {
                     for (RobotInfo b : bots) {
                         ArchonBroadcast(b);
+                        GardenerBroadcast(b);
                         float dist = rc.getLocation().distanceTo(b.getLocation());
                         if (b.getTeam() != rc.getTeam() && rc.canStrike() && dist <= GameConstants.LUMBERJACK_STRIKE_RADIUS + rc.getType().bodyRadius) {
                             rc.strike();
@@ -464,8 +483,10 @@ public strictfp class RobotPlayer {
                     for(RobotInfo b: bots){
                         Direction dir = rc.getLocation().directionTo(b.getLocation());
                         ArchonBroadcast(b);
+                        GardenerBroadcast(b);
                         if (b.getTeam()!=rc.getTeam()){
                             ArchonBroadcast(b);
+                            GardenerBroadcast(b);
                             if (rc.canFirePentadShot()&&rc.getTeamBullets()>=1000&&checkFriendlyFire(dir)){
                                 rc.firePentadShot(dir);
                             }
