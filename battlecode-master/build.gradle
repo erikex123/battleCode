@@ -200,10 +200,6 @@ task jarForUpload(type: Jar) {
     archiveName = 'battlecode-player-upload.jar'
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '3.3'
-}
-
 // Battlecode updates a lot.
 // We should make sure to check for new dependencies frequently.
 configurations.all {

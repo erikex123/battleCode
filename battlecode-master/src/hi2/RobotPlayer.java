@@ -17,14 +17,14 @@ public strictfp class RobotPlayer {
 
     static final int ArchonPositionX = 99;
     static final int ArchonPositionY = 999;
-
+    static final int ScoutEnemyBasePositionX = 100;
+    static final int ScoutEnemyBasePositionY = 101;
 
 
 
     static int count = 0;
 
 
-    static List<String> idArr = new ArrayList<String>();
 
     @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
@@ -48,18 +48,12 @@ public strictfp class RobotPlayer {
                 break;
             case SCOUT:
                 runScout();
-            case TANK:
-                runTank();
         }
     }
 
     // commonly used methods
     public static Direction randomDir() {
         return dirList[rand.nextInt(4)];
-    }
-
-    public static void donate() throws GameActionException{
-        if (rc.getTeamBullets()>1000) rc.donate(10);
     }
 
     public static void initDirList() {
@@ -98,14 +92,6 @@ public strictfp class RobotPlayer {
     }
 
 
-    public static void ArchonBroadcast(RobotInfo b) throws GameActionException {
-        if (b.getType() == RobotType.ARCHON && b.getTeam() != rc.getTeam()) {
-            rc.broadcast(ArchonPositionX, (int) (b.getLocation().x));
-            rc.broadcast(ArchonPositionY, (int) (b.getLocation().y));
-        }
-
-    }
-
     // robots classes
     public static void runArchon() {
 
@@ -119,11 +105,12 @@ public strictfp class RobotPlayer {
 
                 goingDir = randomDir();
 
-                if (rc.getTeamBullets() >100 && rc.canHireGardener(goingDir)){
-                    rc.hireGardener(goingDir);
+                if (rc.getTeamBullets() <= 120 ){
+                    buildAndCheckRobotByGardener(RobotType.GARDENER,goingDir);
                 }
                 else {
-                    if (Math.random() < .8 && rc.canHireGardener(goingDir)) {
+
+                    if (Math.random() < .1 && rc.canHireGardener(goingDir)) {
                         rc.hireGardener(goingDir);
                         //tryToBuild(RobotType.GARDENER, RobotType.GARDENER.bulletCost);
                     } else {
@@ -131,19 +118,52 @@ public strictfp class RobotPlayer {
                     }
                     //System.out.println("bytecode usage is "+Clock.getBytecodeNum());
                     Clock.yield();
-                }
+               }
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
+//    public static void runArchon() {
+//
+//        while (true) {
+//            try {
+//
+//                //TODO count gardeners
+//                //try to build gardeners
+//                //can you build a gardener?
+//
+//
+//                goingDir = randomDir();
+//
+//                if (rc.getTeamBullets() < 50 && rc.canHireGardener(goingDir)){
+//                    rc.hireGardener(goingDir);
+//                }
+//                else {
+//
+//                    if (Math.random() < .1 && rc.canHireGardener(goingDir)) {
+//                        rc.hireGardener(goingDir);
+//                        //tryToBuild(RobotType.GARDENER, RobotType.GARDENER.bulletCost);
+//                    } else {
+//                        wander();
+//                    }
+//                    //System.out.println("bytecode usage is "+Clock.getBytecodeNum());
+//                    Clock.yield();
+//                }
+//            }catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//        }
+//    }
+
+
 
     static boolean checkIfSurroundinghaveGardener(MapLocation location){
         RobotInfo[] bot = rc.senseNearbyRobots();
         for (RobotInfo b : bot){
 
             float distanceBetween = (b.getLocation()).distanceTo(rc.getLocation());
-            if (b.getType() == RobotType.GARDENER && (b.getTeam() == rc.getTeam() ) && distanceBetween <= 7){
+            if (b.getType() == RobotType.GARDENER && (b.getTeam() == rc.getTeam() ) && distanceBetween <= 8){
                 return true;
             }
         }
@@ -151,74 +171,110 @@ public strictfp class RobotPlayer {
         return false;
     }
 
+    static void tryPlantTrees(Direction dir) throws  GameActionException{
+             if (rc.canPlantTree(dir)) {
+                 rc.plantTree(dir);
+             }
+    }
 
+
+
+    public static int GardenerCount  = 0;
     public static void runGardener() throws GameActionException {
-        donate();
-        count++;
-        int scout_count=0;
+
+
 
         Direction dir = Direction.NORTH;
+
         int NumOfTrees = 0 ;
+
+         boolean stableState = false;
+         boolean buildTreesCompleted = false ;
+
+         Direction facingDir = dir;
+
+         stableState = !checkIfSurroundinghaveGardener(rc.getLocation());
+
+
+
+
 
         while (true) {
             try {
 
-                if (checkIfSurroundinghaveGardener(rc.getLocation())){
+                if (stableState == false){
+                    goingDir = randomDir();
                     if (rc.canMove(goingDir)) {
                         rc.move(goingDir);
-                    } else {
-                        goingDir = randomDir();
                     }
+                    stableState = !checkIfSurroundinghaveGardener(rc.getLocation());
                 }else {
-                    while (NumOfTrees < 3) {
-                        while (rc.getTeamBullets() > 80 && rc.canBuildRobot(RobotType.SCOUT, dir)&&scout_count<3){
+
+                    while (NumOfTrees < 5) {
+                        if (rc.getTeamBullets() > 80 && rc.canBuildRobot(RobotType.SCOUT, dir)){
                             rc.buildRobot(RobotType.SCOUT, dir);
-                            scout_count++;
                         }
-                        if (rc.canPlantTree(dir)) {
+                        else if (rc.canPlantTree(dir)) {
                             rc.plantTree(dir);
+
+
                             NumOfTrees++;
+                            if (NumOfTrees == 4){
+                                facingDir = dir;
+                                buildTreesCompleted = true;
+                                break;
+                            }
                         }else if (rc.getTeamBullets() >= 100){
-                            buildAndCheckRobotByGardener(RobotType.SOLDIER,dir);
                             buildAndCheckRobotByGardener(RobotType.LUMBERJACK, dir);
                         }
-                        if (rc.getTeamBullets()<500) {
-                            tryToWater();
-                            tryToShake();
-                        }
+
+                        tryToWater();
+                        tryToShake();
+
                         dir = dir.rotateLeftDegrees(60);
 
 
                     }
-                }
 
-                if (rc.getTeamBullets()<150) {
-                    tryToWater();
-                    tryToShake();
-                }
+                    if (buildTreesCompleted == true){
 
-                /**
-                 * here controls the type of robot that will be built
-                 */
-                if (Math.random()<0.6) {
-                    for (int i = 0; i < 5; i++) {
-//                    if (rc.readBroadcast(ArchonPositionX)!=0 && rc.readBroadcast(ArchonPositionY)!=0){
-//                        buildAndCheckRobotByGardener(RobotType.SOLDIER,dir);
-//                        buildAndCheckRobotByGardener(RobotType.LUMBERJACK, dir);
-//                        buildAndCheckRobotByGardener(RobotType.SOLDIER,dir);
-//                    }
-                        if (i % 2 == 0) {
-                            buildAndCheckRobotByGardener(RobotType.LUMBERJACK, dir);
-                        } else {
-                            buildAndCheckRobotByGardener(RobotType.SOLDIER, dir);
+                        for (int i = 0 ; i < 6 ; i ++) {
+                            if (Math.random() > 0.5){
+                                buildAndCheckRobotByGardener(RobotType.LUMBERJACK, facingDir);
+                            } else{
+                                buildAndCheckRobotByGardener(RobotType.SOLDIER, facingDir);
+                            }
+
+
+
+
+                            facingDir = facingDir.rotateLeftDegrees(60);
+
                         }
-                        dir = dir.rotateLeftDegrees(60);
+                        tryToWater();
+                        tryToShake();
                     }
+
+
+
+
+
                 }
-                if (rc.getTeamBullets()>=300){
-                    buildAndCheckRobotByGardener(RobotType.TANK,dir);
-                    dir = dir.rotateLeftDegrees(60);
-                }
+
+
+
+
+
+
+
+                tryToWater();
+                tryToShake();
+
+
+
+                Clock.yield();
+
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -226,11 +282,10 @@ public strictfp class RobotPlayer {
     }
 
     static void buildAndCheckRobotByGardener(RobotType R , Direction dir) throws GameActionException{
-        if (rc.canBuildRobot(R,dir)){
-            rc.buildRobot(R,dir);
-        }
+      if (rc.canBuildRobot(R,dir)){
+          rc.buildRobot(R,dir);
+      }
     }
-
 
 
     static MapLocation giveMapLocationOfArchon(final int X, final int Y) throws GameActionException {
@@ -243,96 +298,11 @@ public strictfp class RobotPlayer {
 
     }
 
-//    public static boolean NoTreesNearBy(){
-//        TreeInfo[] trees = rc.senseNearbyTrees();
-//        for (TreeInfo t: trees){
-//            if ()
-//        }
-//
-//    }
+    public static void runSoldier() {
 
-    public static boolean checkFriendlyFire(Direction dir){
-        MapLocation own = rc.getLocation();
-        RobotInfo[] bots = rc.senseNearbyRobots();
-        Direction newdir=dir.rotateRightDegrees(180);
-        for (RobotInfo b : bots){
-            if (b.getTeam()==rc.getTeam()){
-                if (b.getLocation().directionTo(own).equals(newdir)){
-                    System.out.println("My position: "+newdir.toString() + " Friend position: "+b.getLocation().directionTo(own).toString());
-                    return false;
-                }
-            }
-        }
-        return true;
     }
 
-    public static void runSoldier() throws GameActionException {
-
-        donate();
-        boolean archonCount  = true ;
-        while (true && archonCount) {
-            try {
-
-                dodge();
-
-                MapLocation[] ml = rc.getInitialArchonLocations(rc.getTeam().opponent());
-
-
-                Direction enemyBase = rc.getLocation().directionTo(ml[0]);
-
-                RobotInfo[] bots = rc.senseNearbyRobots();
-
-
-//                BulletInfo[] bullets=rc.senseNearbyBullets();
-
-                if (ThereIsEnemyBotNearBy()){
-                    for(RobotInfo b: bots){
-                        Direction dir = rc.getLocation().directionTo(b.getLocation());
-                        ArchonBroadcast(b);
-                        if (b.getTeam()!=rc.getTeam()){
-                            ArchonBroadcast(b);
-                            if (rc.canFirePentadShot()&&rc.getTeamBullets()>=1000&&checkFriendlyFire(dir)){
-                                rc.firePentadShot(dir);
-                            }
-                            else if (rc.canFireTriadShot()&&rc.getTeamBullets()>=700&&checkFriendlyFire(dir)){
-                                rc.fireTriadShot(dir);
-                            }
-                            else if (rc.canFireSingleShot()&& rc.getTeamBullets()>0){
-                                rc.fireSingleShot(dir);
-                            }
-                            else{
-                                if (rc.readBroadcast(ArchonPositionX)!=0 && rc.readBroadcast(ArchonPositionY)!=0){
-                                    Direction dirToArchon = rc.getLocation().directionTo(giveMapLocationOfArchon(ArchonPositionX,ArchonPositionY));
-                                    wanderWithDirection(dirToArchon);
-                                }else{
-                                    wanderWithDirection(enemyBase);
-                                }
-                            }
-                        }
-                    }
-                }
-                else{
-                    if (rc.readBroadcast(ArchonPositionX)!=0 && rc.readBroadcast(ArchonPositionY)!=0){
-                        Direction dirToArchon = rc.getLocation().directionTo(giveMapLocationOfArchon(ArchonPositionX,ArchonPositionY));
-                        wanderWithDirection(dirToArchon);
-                    }else{
-                        wanderWithDirection(enemyBase);
-                    }
-                }
-                Clock.yield();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-
-
-
-
-
-    public static void runScout() throws GameActionException{
-        donate();
+    public static void runScout() {
         boolean archonCount  = true ;
         while (true && archonCount) {
             try {
@@ -349,23 +319,15 @@ public strictfp class RobotPlayer {
 //                BulletInfo[] bullets=rc.senseNearbyBullets();
 
 
-                if (rc.readBroadcast(ArchonPositionX) == 0 && rc.readBroadcast(ArchonPositionY) == 0){
-                    directionalTravel(enemyBase);
-                    for (RobotInfo b: bots){
-                        ArchonBroadcast(b);
-                    }
+                if (rc.readBroadcast(ScoutEnemyBasePositionX) == 0 && rc.readBroadcast(ScoutEnemyBasePositionY) == 0){
+                    wanderWithDirection(enemyBase);
                 }else{
                     if (ThereIsEnemyBotNearBy()) {
                         for (RobotInfo b : bots) {
-                            ArchonBroadcast(b);
                             Direction dir = rc.getLocation().directionTo(b.getLocation());
                             if (b.getTeam() != rc.getTeam()) {
-
                                 if (rc.canFireSingleShot()) {
                                     rc.fireSingleShot(dir);
-                                }
-                                if (b.getType()==RobotType.LUMBERJACK){
-                                    wander();
                                 }
                                 if (rc.canMove(dir)&&dir==enemyBase) {
                                     rc.move(dir);
@@ -374,10 +336,15 @@ public strictfp class RobotPlayer {
                                 }
 
                             }
+                            if (b.getType() == RobotType.ARCHON && b.getTeam() != rc.getTeam()) {
+                                rc.broadcast(ScoutEnemyBasePositionX, (int) (rc.getLocation().x));
+                                rc.broadcast(ScoutEnemyBasePositionY, (int) (rc.getLocation().y));
+                            }
                         }
                     }else{
-                            Direction dirToArchon = rc.getLocation().directionTo(giveMapLocationOfArchon(ArchonPositionX,ArchonPositionY));
-                            directionalTravel(dirToArchon);
+
+                            Direction dirToArchon = rc.getLocation().directionTo(giveMapLocationOfArchon(ScoutEnemyBasePositionX,ScoutEnemyBasePositionY));
+                            wanderWithDirection(dirToArchon);
 
                     }
                 }
@@ -390,14 +357,23 @@ public strictfp class RobotPlayer {
     }
 
     public static void runLumberjack() throws GameActionException {
-        donate();
-        boolean archonCount  = true ;
-        while (true && archonCount) {
+
+
+
+        while (true ) {
+
             try {
                 dodge();
 
                 MapLocation[] ml = rc.getInitialArchonLocations(rc.getTeam().opponent());
 
+//                if (ml.length == 2 ){
+//                    Direction Archon1toAchon2 = ml[0].directionTo(ml[1]);
+//                }
+//                else if (ml.length == 3){
+//                    Direction Archon1toAchon2 = ml[0].directionTo(ml[1]);
+//                    Direction Archon2toAchon3 = ml[1].directionTo(ml[2]);
+//                }
 
                 Direction enemyBase = rc.getLocation().directionTo(ml[0]);
 
@@ -406,7 +382,7 @@ public strictfp class RobotPlayer {
 
                 if (ThereIsEnemyBotNearBy()) {
                     for (RobotInfo b : bots) {
-                        ArchonBroadcast(b);
+
                         float dist = rc.getLocation().distanceTo(b.getLocation());
                         if (b.getTeam() != rc.getTeam() && rc.canStrike() && dist <= GameConstants.LUMBERJACK_STRIKE_RADIUS + rc.getType().bodyRadius) {
                             rc.strike();
@@ -417,8 +393,18 @@ public strictfp class RobotPlayer {
                             }
                             break;
                         }
+                        if (b.getType() == RobotType.ARCHON && b.getTeam() != rc.getTeam()) {
+                            rc.strike();
+                            Direction dir = rc.getLocation().directionTo(b.getLocation());
+                            rc.broadcast(ArchonPositionX, (int) (rc.getLocation().x));
+                            rc.broadcast(ArchonPositionY, (int) (rc.getLocation().y));
+                            if (rc.canMove(dir)) {
+                                rc.move(dir);
+                            }
+                        }
                     }
                 }
+
                 else if (!ThereIsEnemyBotNearBy()) {
                     if (rc.readBroadcast(ArchonPositionX) == 0 && rc.readBroadcast(ArchonPositionY) == 0){
                         wanderWithDirection(enemyBase);
@@ -426,79 +412,30 @@ public strictfp class RobotPlayer {
                         Direction dirToArchon = rc.getLocation().directionTo(giveMapLocationOfArchon(ArchonPositionX,ArchonPositionY));
                         wanderWithDirection(dirToArchon);
                     }
+
                     TreeInfo[] tree = rc.senseNearbyTrees();
                     for (TreeInfo t : tree) {
+
                         if (rc.canChop(t.getID()) && t.getTeam() != rc.getTeam()) {
                             rc.chop(t.getID());
                             break;
                         }
                     }
                 }
+
+
+
+//                if (!rc.hasAttacked()) {
+//                    wanderWithDirection(enemyBase);
+//                }
                 Clock.yield();
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
-    }
-
-    public static void runTank() throws GameActionException{
-
-        donate();
-        boolean archonCount  = true ;
-        while (true && archonCount) {
-            try {
-
-                dodge();
-
-                MapLocation[] ml = rc.getInitialArchonLocations(rc.getTeam().opponent());
 
 
-                Direction enemyBase = rc.getLocation().directionTo(ml[0]);
 
-                RobotInfo[] bots = rc.senseNearbyRobots();
-
-
-//                BulletInfo[] bullets=rc.senseNearbyBullets();
-
-                if (ThereIsEnemyBotNearBy()){
-                    for(RobotInfo b: bots){
-                        Direction dir = rc.getLocation().directionTo(b.getLocation());
-                        ArchonBroadcast(b);
-                        if (b.getTeam()!=rc.getTeam()){
-                            ArchonBroadcast(b);
-                            if (rc.canFirePentadShot()&&rc.getTeamBullets()>=1000&&checkFriendlyFire(dir)){
-                                rc.firePentadShot(dir);
-                            }
-                            else if (rc.canFireTriadShot()&&rc.getTeamBullets()>=700&&checkFriendlyFire(dir)){
-                                rc.fireTriadShot(dir);
-                            }
-                            else if (rc.canFireSingleShot()&& rc.getTeamBullets()>0){
-                                rc.fireSingleShot(dir);
-                            }
-                            else{
-                                if (rc.readBroadcast(ArchonPositionX)!=0 && rc.readBroadcast(ArchonPositionY)!=0){
-                                    Direction dirToArchon = rc.getLocation().directionTo(giveMapLocationOfArchon(ArchonPositionX,ArchonPositionY));
-                                    wanderWithDirection(dirToArchon);
-                                }else{
-                                    wanderWithDirection(enemyBase);
-                                }
-                            }
-                        }
-                    }
-                }
-                else{
-                    if (rc.readBroadcast(ArchonPositionX)!=0 && rc.readBroadcast(ArchonPositionY)!=0){
-                        Direction dirToArchon = rc.getLocation().directionTo(giveMapLocationOfArchon(ArchonPositionX,ArchonPositionY));
-                        wanderWithDirection(dirToArchon);
-                    }else{
-                        wanderWithDirection(enemyBase);
-                    }
-                }
-                Clock.yield();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
     }
 
 
