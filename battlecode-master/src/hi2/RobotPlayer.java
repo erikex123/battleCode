@@ -58,6 +58,91 @@ public strictfp class RobotPlayer {
     }
 
     // commonly used methods
+
+    /**
+     * here is the method that keeps gardener constant
+     *
+     *
+     */
+
+//channel used to track the no. gardener
+    static final int Current_Gardener = 103;
+
+    // call this method in rungardener, it will tell the archon that the gardener still exist
+    public static void Gardener_Broadcast_Existance() throws GameActionException {
+        int previous_Count = rc.readBroadcast(Current_Gardener);
+        rc.broadcast(Current_Gardener, previous_Count+1);
+
+    }
+
+    // call it method in archon class, the parameter is the desired number of Gardener that you want to keep
+// if there are not enough, It returns true
+    public static boolean ThereAreNotEnough_Gardener(int MaxiumNum_Gardener) throws GameActionException{
+
+        int currentGardenerCount = rc.readBroadcast(Current_Gardener);
+        if (currentGardenerCount <= MaxiumNum_Gardener){
+            rc.broadcast(currentGardenerCount, 0);
+            return true;
+        }
+        else{
+            rc.broadcast(currentGardenerCount, 0);
+            return false;
+        }
+
+
+    }
+
+    // to a location
+    public static void directionalTravelToASpecificLocation(MapLocation destination) throws GameActionException {
+        Direction dir = rc.getLocation().directionTo(destination);
+        if (!rc.hasMoved() && rc.canMove(dir)) {
+            rc.move(dir);
+        }
+        else if (!rc.hasMoved() && !rc.canMove(dir)){
+            //check
+
+            if (rc.canMove(dir.rotateLeftDegrees(90))){
+                rc.move(dir.rotateLeftDegrees(90));
+            }
+            else if (rc.canMove(dir.rotateLeftDegrees(90))){
+                rc.move(dir.rotateLeftDegrees(90));
+            }
+            else {
+                rc.move(dir.opposite());
+            }
+
+
+
+        }
+    }
+    // to a direction
+    public static void directionalTravel(Direction dir) {
+        try {
+
+            if (!rc.hasMoved() && rc.canMove(dir)) {
+                rc.move(dir);
+            }
+            else if (!rc.hasMoved() && !rc.canMove(dir)) {
+                //check
+
+                if (rc.canMove(dir.rotateLeftDegrees(90))) {
+                    rc.move(dir.rotateLeftDegrees(90));
+                } else if (rc.canMove(dir.rotateLeftDegrees(90))) {
+                    rc.move(dir.rotateLeftDegrees(90));
+                } else {
+                    rc.move(dir.opposite());
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+
+
+
     public static Direction randomDir() {
         return dirList[rand.nextInt(4)];
     }
@@ -88,18 +173,7 @@ public strictfp class RobotPlayer {
     }
 
 
-    public static void directionalTravel(Direction dir) {
-        try {
-            if (rc.canMove(dir)) {
-                rc.move(dir);
-            } else {
-                wander();
-            }
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
 
     public static void ArchonBroadcast(RobotInfo b) throws GameActionException {
@@ -318,8 +392,7 @@ public strictfp class RobotPlayer {
                             }
                             else{
                                 if (rc.readBroadcast(ArchonPositionX)!=0 && rc.readBroadcast(ArchonPositionY)!=0){
-                                    Direction dirToArchon = rc.getLocation().directionTo(giveMapLocationOfArchon(ArchonPositionX,ArchonPositionY));
-                                    wanderWithDirection(dirToArchon);
+                                    directionalTravelToASpecificLocation(giveMapLocationOfArchon(ArchonPositionX,ArchonPositionY));
                                 }else{
                                     wanderWithDirection(enemyBase);
                                 }
